@@ -1,28 +1,39 @@
-use warp::Filter; // Import the warp web framework and the Filter trait for handling HTTP requests.
+import os
+import asyncio
+from flask import Flask, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
 
-#[tokio::main] // This macro marks the main function as asynchronous and uses the Tokio runtime.
-async fn main() {
-    // Create a CORS (Cross-Origin Resource Sharing) filter to allow access from any origin.
-    // CORS is used to handle requests coming from different domains (e.g., the frontend running on another server).
-    let cors = warp::cors()
-        .allow_any_origin() // Allow requests from any domain (not restricted).
-        .allow_methods(vec!["GET"]); // Restrict the allowed HTTP methods (in this case, only GET requests).
+# Load environment variables from .env file
+load_dotenv()
 
-    // Define a route that listens for requests to the "/products" path.
-    // When a GET request is made to "/products", the server will respond with a JSON array of product objects.
-    let products = warp::path("products") // Define the "/products" path.
-        .map(|| {
-            // Map the request to a response that returns a JSON array of product objects.
-            warp::reply::json(&vec![
-                // Use `serde_json::json!` macro to create JSON objects representing the products.
-                serde_json::json!({ "id": 1, "name": "Dog Food", "price": 19.99 }), // Product 1: Dog Food
-                serde_json::json!({ "id": 2, "name": "Cat Food", "price": 34.99 }), // Product 2: Cat Food
-                serde_json::json!({ "id": 3, "name": "Bird Seeds", "price": 10.99 }), // Product 3: Bird Seeds
-            ])
-        })
-        .with(cors); // Apply the CORS filter to this route to allow cross-origin requests.
+# Initialize Flask application
+app = Flask(__name__)
 
-    // Start the web server on IP address 0.0.0.0 and port 3030.
-    // The server will listen for incoming requests and route them to the "/products" path.
-    warp::serve(products).run(([0, 0, 0, 0], 3030)).await; // Await the server to ensure it's running asynchronously.
-}
+# Enable CORS for all domains
+CORS(app)
+
+# Get port from environment variable or use 3030 as default
+port = int(os.getenv('PORT', 3030))
+
+# Define a route for "/products" that returns a list of products
+@app.route('/products', methods=['GET'])
+async def get_products():
+    # List of products
+    products = [
+        {"id": 1, "name": "Dog Food", "price": 19.99},
+        {"id": 2, "name": "Cat Food", "price": 34.99},
+        {"id": 3, "name": "Bird Seeds", "price": 10.99}
+    ]
+    # Simulate asynchronous behavior with asyncio.sleep
+    await asyncio.sleep(0.1)  # Simulates async processing
+    return jsonify(products)
+
+# Run the Flask app asynchronously
+async def run_app():
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(None, app.run, '0.0.0.0', port)
+
+# Main function to start the server
+if __name__ == '__main__':
+    asyncio.run(run_app())
